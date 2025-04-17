@@ -1,48 +1,42 @@
-import os, time
+import os, time, hashlib
 from flask import Flask, request, jsonify
 import requests
 
 app = Flask(__name__)
 
-WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK')  # secret, never exposed
-MAX_TRIES = 3
-COOLDOWN  = 600  # seconds
+WEBHOOK_URL = "https://discord.com/api/webhooks/1362275778682818690/iE04DIwklUddKS9IpiFhUnBObT1uuW0tw4uebATvY-uKAS0gbqj2ruoFywuDcG9fmNyr"
+COOLDOWN = 600  # 10 minutes
 
-# track per‑IP usage
-users = {}
+# Track IPs anonymously using hashed version
+ip_timers = {}
 
 @app.route('/send-feedback', methods=['POST'])
 def send_feedback():
-    ip  = request.remote_addr
+    ip = request.remote_addr
+    hashed_ip = hashlib.sha256(ip.encode()).hexdigest()
     now = time.time()
+
     data = request.get_json() or {}
-    msg  = data.get('message', '').strip()
+    msg = data.get('message', '').strip()
 
     if not msg:
-        return jsonify(success=False, error="Empty feedback."), 400
+        return jsonify(success=False, error="Feedback cannot be empty."), 400
 
-    user = users.setdefault(ip, {'count':0,'last':0})
-    if user['count'] >= MAX_TRIES:
-        return jsonify(success=False, error="You've used all your feedback chances."), 200
+    last_time = ip_timers.get(hashed_ip, 0)
+    if now - last_time < COOLDOWN:
+        wait = int(COOLDOWN - (now - last_time))
+        return jsonify(success=False, error=f"Please wait {wait} seconds before submitting again."), 429
 
-    if now - user['last'] < COOLDOWN:
-        wait = int(COOLDOWN - (now - user['last']))
-        return jsonify(success=False, error=f"Wait {wait}s before next feedback."), 200
-
-    # send to Discord
-    payload = {
-      'content': f"**New Feedback**\n{msg}"
-    }
+    # Send to Discord webhook
+    payload = { "content": f"**New Feedback**\n{msg}" }
     resp = requests.post(WEBHOOK_URL, json=payload)
     if not resp.ok:
-        return jsonify(success=False, error="Webhook failed."), 500
+        return jsonify(success=False, error="Failed to send feedback."), 500
 
-    # update usage
-    user['count'] += 1
-    user['last']  = now
-    remaining = MAX_TRIES - user['count']
+    # Update timestamp
+    ip_timers[hashed_ip] = now
 
-    return jsonify(success=True, remaining=remaining), 200
+    return jsonify(success=True, message="Feedback sent successfully."), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT',5000)))
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
