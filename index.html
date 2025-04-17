@@ -5,16 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cookie Hub | Feedback</title>
   <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
 </head>
 <body>
   <div class="container">
     <img src="https://i.postimg.cc/yxSmXs5Z/IMG-4528.png" alt="Logo" class="logo" />
-    <h1>Send Feedback</h1>
-    <textarea id="feedbackText" placeholder="Write your feedback here..."></textarea>
-    <button id="sendBtn">Send Feedback Now!</button>
-    <p class="tiny">Created by: Mash :)</p>
-  </div>
+    <h1 data-en="Cookie Hub | Feedback" data-id="Pusat Kue | Umpan Balik"></h1>
 
-  <script src="script.js"></script>
+    <div class="lang-switch">
+      <label for="lang" data-en="Language:" data-id="Bahasa:"></label>
+      <select id="lang">
+        <option value="en">EN</option>
+        <option value="id">ID</option>
+      </select>
+    </div>
+
+    <form id="feedbackForm">
+      <textarea
+        id="feedbackMessage"
+        data-en="Write your feedback here..."
+        data-id="Tulis masukan kamu di sini..."
+        placeholder=""
+        required></textarea>
+      <button type="submit" id="sendBtn" data-en="Send Feedback Now!" data-id="Kirim Masukan Sekarang!"></button>
+    </form>
+
+    <p class="tiny" data-en="Created by: Mash :)" data-id="Dibuat oleh: Mash :)"></p>
+  </div>
 </body>
 </html>
