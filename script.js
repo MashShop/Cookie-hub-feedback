@@ -1,30 +1,38 @@
-document.getElementById("sendBtn").addEventListener("click", function () {
-  const feedback = document.getElementById("feedbackText").value.trim();
+// language switcher
+const langSelect = document.getElementById('lang');
+function applyLang(lang) {
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.textContent = el.dataset[lang];
+  });
+}
+langSelect.addEventListener('change', () => applyLang(langSelect.value));
+// initialize
+applyLang('en');
 
-  if (!feedback) {
-    alert("Please write some feedback before submitting.");
-    return;
-  }
+// form submission with 3‑send & 10‑min cooldown enforced server‑side
+document.getElementById('feedbackForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = document.getElementById('feedbackMessage').value.trim();
+  if (!msg) return alert('Please write your feedback.');
 
-  fetch("https://discord.com/api/webhooks/1362275778682818690/iE04DIwklUddKS9IpiFhUnBObT1uuW0tw4uebATvY-uKAS0gbqj2ruoFywuDcG9fmNyr", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      content: `**New Feedback:**\n${feedback}`
-    })
-  })
-    .then(response => {
-      if (response.ok) {
-        alert("Feedback sent successfully!");
-        document.getElementById("feedbackText").value = "";
-      } else {
-        alert("Failed to send feedback.");
-      }
-    })
-    .catch(error => {
-      console.error("Error:", error);
-      alert("Error sending feedback.");
+  try {
+    const res = await fetch('/send-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
     });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.remaining
+        ? `Feedback sent! You have ${data.remaining} tries left.`
+        : 'Feedback sent! You’ve used all your chances.'
+      );
+      document.getElementById('feedbackMessage').value = '';
+    } else {
+      alert(data.error);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error sending feedback.');
+  }
 });
